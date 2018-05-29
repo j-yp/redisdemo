@@ -6,4 +6,8 @@ public interface UserService {
 	String getUser(String name);
 
 	RedisLockResult<String> process() throws InterruptedException;
+
+	void testThread();
+
+	RedisLockResult<String> testRedisLock();
 }

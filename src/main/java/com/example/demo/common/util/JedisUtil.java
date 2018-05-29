@@ -57,4 +57,16 @@ public class JedisUtil {
 		return result;
 	}
 
+	public static Long ttl(String key) {
+		Long result = null;
+		try(Jedis jedis = jedisPool.getResource()) {
+			result = jedis.ttl(key);
+		}
+		return result;
+	}
+	
+	public static Jedis getJedis() {
+		return jedisPool.getResource();
+	}
+	
 }

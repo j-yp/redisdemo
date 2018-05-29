@@ -10,5 +10,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface RedisLock {
-
+	String lockName();
+	//锁超时时间
+	int timeOut() default 5;
+	//获取超时时间
+	int acquireTimeout() default 5;
 }

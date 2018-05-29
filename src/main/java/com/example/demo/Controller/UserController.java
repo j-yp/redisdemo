@@ -7,6 +7,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.example.demo.common.util.ThreadTest;
 import com.example.demo.service.UserService;
 import com.example.demo.vo.RedisLockResult;
 
@@ -71,6 +72,34 @@ public class UserController {
 			System.out.println("controllerResult:"+result);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
+		}
+		return "success";
+	}
+	
+	@RequestMapping("/testThread")
+	public String testThread(String param) {
+		System.out.println(Thread.currentThread().getName() + "==param:" + param);
+		ThreadTest.set(param);
+		try {
+			Thread.sleep(1000L);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		userService.testThread();
+		return "success";
+	}
+	
+	@RequestMapping("/testRedisLock")
+	@ResponseBody
+	public String testRedisLock() {
+		for (int i = 0; i < 20; i++) {
+			Thread thread = new Thread() {
+				@Override
+				public void run() {
+					userService.testRedisLock();
+				}
+			};
+			thread.start();
 		}
 		return "success";
 	}
