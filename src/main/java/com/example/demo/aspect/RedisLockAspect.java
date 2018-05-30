@@ -18,26 +18,36 @@ import redis.clients.jedis.Transaction;
 
 @Aspect
 @Component
-public class RedisLockAspect {
+public class RedisLockAspect<T> {
+	/**
+	 * 这里为@RedisLock注解配置了环绕增强的方法，实现分布式锁的功能，只要添加@RedisLock即可实现分布式锁
+	 * @param joinPoint
+	 * @param redisLock
+	 * @return
+	 * @throws Throwable
+	 */
     @SuppressWarnings("unchecked")
 	@Around("@annotation(redisLock)")
-    public RedisLockResult<String> aroundMethod(ProceedingJoinPoint joinPoint, RedisLock redisLock) throws Throwable {
-    	RedisLockResult<String> redisLockResult = null;
+    public RedisLockResult<T> aroundMethod(ProceedingJoinPoint joinPoint, RedisLock redisLock) throws Throwable {
+    	RedisLockResult<T> redisLockResult = null;
     	String lockName = "lock" + redisLock.lockName();
     	String retIdentifier = lockWithTimeout(lockName, redisLock.acquireTimeout(), redisLock.timeOut());
     	if(retIdentifier != null) {
     		System.out.println("[redis-lock]: get lock success. The lock is " + retIdentifier);
-    		redisLockResult = (RedisLockResult<String>) joinPoint.proceed();
+    		/*
+    		 * 执行增强方法代码
+    		 */
+    		redisLockResult = (RedisLockResult<T>) joinPoint.proceed();
     		if(releaseLock(lockName, retIdentifier)) {
-    			redisLockResult.setRedisLockStatus(RedisLockStatus.SUCCESS.getCode());
+    			redisLockResult.setRedisLockStatus(RedisLockStatus.SUCCESS.name());
     			System.out.println("[redis-lock]: release lock successfully. ");
     		}else {
-    			redisLockResult.setRedisLockStatus(RedisLockStatus.ERROR.getCode());
+    			redisLockResult.setRedisLockStatus(RedisLockStatus.ERROR.name());
     			System.out.println("[redis-lock]: release lock unsuccessfully. ");
     		}
     	}else {
     		System.out.println("[redis-lock]: get lock unsuccessfully. ");
-    		redisLockResult = new RedisLockResult<String>(RedisLockStatus.ERROR.getCode());
+    		redisLockResult = RedisLockResult.error();
     	}
     	return redisLockResult;
     }

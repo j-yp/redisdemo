@@ -32,25 +32,15 @@ public class RedisLockResult<T> {
 
 	@SuppressWarnings("rawtypes")
 	public static <T> RedisLockResult success(T result) {
-		return new RedisLockResult<>(RedisLockStatus.SUCCESS.getCode(), result);
+		return new RedisLockResult<>(RedisLockStatus.SUCCESS.name(), result);
 	}
 	
 	@SuppressWarnings("rawtypes")
-	public static <T> RedisLockResult error(T result) {
-		return new RedisLockResult<>(RedisLockStatus.ERROR.getCode(), result);
+	public static <T> RedisLockResult error() {
+		return new RedisLockResult<>(RedisLockStatus.ERROR.name(), null);
 	}
 	
 	public enum RedisLockStatus{
-		SUCCESS("success"),ERROR("error");
-		private String code;
-		private RedisLockStatus(String code) {
-			this.code = code;
-		}
-		public String getCode() {
-			return code;
-		}
-		public void setCode(String code) {
-			this.code = code;
-		}
+		SUCCESS,ERROR;
 	}
 }
