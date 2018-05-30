@@ -11,6 +11,8 @@ import com.example.demo.common.util.ThreadTest;
 import com.example.demo.service.UserService;
 import com.example.demo.vo.RedisLockResult;
 
+import redis.clients.jedis.Jedis;
+
 @Controller
 @RequestMapping("/user")
 public class UserController {
@@ -101,6 +103,15 @@ public class UserController {
 			};
 			thread.start();
 		}
+		return "success";
+	}
+	
+	@RequestMapping("/testRedis")
+	@ResponseBody
+	public String testRedis() {
+		Jedis jedis = new Jedis("127.0.0.1", 6379);
+		System.out.println(jedis.get("firstTest"));
+		jedis.close();
 		return "success";
 	}
 }
