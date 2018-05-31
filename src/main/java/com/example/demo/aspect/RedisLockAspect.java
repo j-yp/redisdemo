@@ -6,10 +6,11 @@ import java.util.UUID;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.example.demo.anno.RedisLock;
-import com.example.demo.common.util.JedisUtil;
+import com.example.demo.common.template.JedisTemplate;
 import com.example.demo.vo.RedisLockResult;
 import com.example.demo.vo.RedisLockResult.RedisLockStatus;
 
@@ -19,6 +20,9 @@ import redis.clients.jedis.Transaction;
 @Aspect
 @Component
 public class RedisLockAspect<T> {
+	@Autowired
+	private JedisTemplate jedisTemplate;	
+	
 	/**
 	 * 这里为@RedisLock注解配置了环绕增强的方法，实现分布式锁的功能，只要添加@RedisLock即可实现分布式锁
 	 * @param joinPoint
@@ -35,9 +39,10 @@ public class RedisLockAspect<T> {
     	if(retIdentifier != null) {
     		System.out.println("[redis-lock]: get lock success. The lock is " + retIdentifier);
     		/*
-    		 * 执行增强方法代码
+    		 * 执行增强的方法代码
     		 */
     		redisLockResult = (RedisLockResult<T>) joinPoint.proceed();
+    		
     		if(releaseLock(lockName, retIdentifier)) {
     			redisLockResult.setRedisLockStatus(RedisLockStatus.SUCCESS.name());
     			System.out.println("[redis-lock]: release lock successfully. ");
@@ -66,15 +71,15 @@ public class RedisLockAspect<T> {
         // 获取锁的超时时间，超过这个时间则放弃获取锁
         long end = System.currentTimeMillis() + acquireTimeout * 1000;
         while (System.currentTimeMillis() < end) {
-            if (JedisUtil.setnx(lockName, identifier) == 1) {
-                JedisUtil.expire(lockName, timeout);
+            if (jedisTemplate.setnx(lockName, identifier) == 1) {
+                jedisTemplate.expire(lockName, timeout);
                 // 返回value值，用于释放锁时间确认
                 retIdentifier = identifier;
                 return retIdentifier;
             }
             // 返回-1代表key没有设置超时时间，为key设置一个超时时间
-            if (JedisUtil.ttl(lockName) == -1) {
-            	JedisUtil.expire(lockName, timeout);
+            if (jedisTemplate.ttl(lockName) == -1) {
+            	jedisTemplate.expire(lockName, timeout);
             }
 
             try {
@@ -94,12 +99,12 @@ public class RedisLockAspect<T> {
      */
     public boolean releaseLock(String lockName, String identifier) {
     	boolean retFlag = false;
-    	try(Jedis jedis = JedisUtil.getJedis();){
+    	try(Jedis jedis = jedisTemplate.getJedis();){
 	    	while (true) {
 	            // 监视lock，准备开始事务
 	    		jedis.watch(lockName);
 	            // 通过前面返回的value值判断是不是该锁，若是该锁，则删除，释放锁
-	            if (identifier.equals(JedisUtil.get(lockName))) {
+	            if (identifier.equals(jedisTemplate.get(lockName))) {
 	                Transaction transaction = jedis.multi();
 	                transaction.del(lockName);
 	                List<Object> results = transaction.exec();
